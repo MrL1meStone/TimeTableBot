@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 from os import getenv
 from asyncio import run
@@ -5,15 +6,18 @@ from aiogram.filters import CommandStart, Command, ChatMemberUpdatedFilter, IS_N
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton, ChatMemberUpdated
 from dotenv import load_dotenv
 
-from database import set_group, remove_from, turn_notification, is_enabled, return_table, return_from, change_time
+from bot_control.database import set_group, remove_from, turn_notification, is_enabled, return_from, change_time, stop_event
+from bot_control.timework import weekly
 
-load_dotenv("BOT_TOKEN.env")
+load_dotenv("bot_settings/BOT_TOKEN.env")
 BOT_TOKEN = getenv("BOT_TOKEN")
 
 from aiogram import Dispatcher, Bot, F
 
 bot = Bot(BOT_TOKEN)
 dp = Dispatcher()
+
+print('Бот готов к работе')
 
 def get_settings_buttons(callback):
     statuses = ["🟢" if is_enabled(i,callback.message.chat.id) else "🔴" for i in ("Weekly", "Tomorrow", "Today")]
@@ -164,8 +168,28 @@ async def bot_removed(event: ChatMemberUpdated):
     print("Бот был удален из группы")
 
 
-async def main() -> None:
+async def start_polling() -> None:
+    print('start polling')
     await dp.start_polling(bot)
+
+async def tasks():
+    weekly_task = asyncio.create_task(weekly(bot))
+    await weekly(bot)
+    while True:
+        await asyncio.sleep(5)
+        if stop_event.is_set():
+            print("Остановка weekly")
+            weekly_task.cancel()
+            print("Запуск weekly")
+            weekly_task = asyncio.create_task(weekly(bot))
+            await weekly(bot)
+            stop_event.clear()
+
+async def main() -> None:
+    asyncio.create_task(tasks())
+    asyncio.create_task(start_polling())
+    await asyncio.Event().wait()
+
 
 if __name__ == "__main__":
     run(main())

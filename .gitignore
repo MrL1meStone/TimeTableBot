@@ -1,2 +1,2 @@
-/BOT_TOKEN.env
-/groups.db
+/bot_settings/groups.db
+/bot_settings/BOT_TOKEN.env

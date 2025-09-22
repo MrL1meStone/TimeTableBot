@@ -1,7 +1,8 @@
 import datetime
 import sqlite3
+import asyncio
 
-connection = sqlite3.connect('groups.db')
+connection = sqlite3.connect('bot_settings/groups.db')
 cursor = connection.cursor()
 
 cursor.execute('''
@@ -26,6 +27,13 @@ CREATE TABLE IF NOT EXISTS Today (
 id INTEGER PRIMARY KEY,
 time TIME NOT NULL,
 enabled BIT NOT NULL) ''')
+
+stop_event = asyncio.Event()
+
+def commit() -> None:
+	connection.commit()
+	print("Остановка тасков...")
+	stop_event.set()
 
 def check_source(source: str ,include_groups: bool = True) -> True:
 	"""
@@ -63,7 +71,7 @@ def set_group(chat_id: int , group: str) -> None:
 		cursor.execute('INSERT INTO Groups (id,groups) VALUES (?, ?)', (chat_id, group))
 	else:
 		cursor.execute('UPDATE Groups SET groups = ? WHERE id = ?', (group,chat_id))
-	connection.commit()
+	commit()
 
 def is_in(source: str , chat_id: int) -> bool:
 	"""
@@ -87,7 +95,7 @@ def return_from(source: str,chat_id: int) -> dict:
 	cursor.execute(f"SELECT * FROM {source} WHERE id=?", (chat_id,))
 	return dict(zip(("id","time","enabled"),cursor.fetchone()))
 
-def return_table(source: str) -> list:
+def return_table(source: str) -> list[dict]:
 	"""
 	Returns table of DB / Возвращает таблицу БД
 	:param source: table of DB where it's need to return / Таблица БД которую нужно вернуть
@@ -95,7 +103,7 @@ def return_table(source: str) -> list:
 	"""
 	check_source(source)
 	cursor.execute(f"SELECT * FROM {source}")
-	return cursor.fetchall()
+	return [dict(zip(("id","time","enabled"),row)) for row in cursor.fetchall()]
 
 def remove_from(source: str, chat_id: int) -> None:
 	"""
@@ -108,7 +116,7 @@ def remove_from(source: str, chat_id: int) -> None:
 		raise ValueError(f"Указанного ID '{chat_id}' нет в таблице БД")
 	check_source(source)
 	cursor.execute(f'DELETE FROM {source} WHERE id = ?', (chat_id,))
-	connection.commit()
+	commit()
 
 def is_enabled(source: str, chat_id: int) -> bool:
 	if not is_in(source,chat_id):
@@ -119,9 +127,9 @@ def is_enabled(source: str, chat_id: int) -> bool:
 def turn_notification(source: str, chat_id: int) -> None:
 	enabled=int(not(is_enabled(source,chat_id)))
 	cursor.execute(f'UPDATE {source} SET enabled = ? WHERE id = ?', (enabled,chat_id))
-	connection.commit()
+	commit()
 
 def change_time(source: str, chat_id: int, time: datetime.time) -> None:
 	check_source(source,include_groups=False)
 	cursor.execute(f'UPDATE {source} SET time = ? WHERE id = ?', (str(time),chat_id))
-	connection.commit()
+	commit()
