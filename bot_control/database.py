@@ -8,7 +8,8 @@ cursor = connection.cursor()
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS Groups (
 id INTEGER PRIMARY KEY,
-groups TEXT NOT NULL) ''')
+groups TEXT NOT NULL,
+course TEXT NOT NULL) ''')
 
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS Weekly (
@@ -58,7 +59,7 @@ def add_to(source: str , chat_id: int, time: str) -> None:
 	check_source(source,include_groups=False)
 	cursor.execute(f'INSERT INTO {source} (id, time, enabled) VALUES (?, ?, 1)', (chat_id,time))
 
-def set_group(chat_id: int , group: str) -> None:
+def set_group(chat_id: int , group: str, course: str) -> None:
 	"""
 	Adds chat id to DB to use schedule notifications /Добавляет ID чата в телеграмме для дальнейшего использования
 	:param chat_id: ID of telegram chat where bot will send schedule /ID чата в телеграмме где бот будет публиковать расписание
@@ -68,7 +69,7 @@ def set_group(chat_id: int , group: str) -> None:
 	if not is_in("Groups",chat_id):
 		for source in ("Weekly", "Tomorrow", "Today"):
 			add_to(source, chat_id, "08:00:00")
-		cursor.execute('INSERT INTO Groups (id,groups) VALUES (?, ?)', (chat_id, group))
+		cursor.execute('INSERT INTO Groups (id,groups,course) VALUES (?, ?, ?)', (chat_id, group, course))
 	else:
 		cursor.execute('UPDATE Groups SET groups = ? WHERE id = ?', (group,chat_id))
 	commit()
@@ -84,6 +85,12 @@ def is_in(source: str , chat_id: int) -> bool:
 	cursor.execute(f"SELECT * FROM {source} WHERE id=?", (chat_id,))
 	return bool(cursor.fetchone())
 
+def get_groups_info(chat_id: int) -> dict[str,str]:
+	if not is_in("Groups",chat_id):
+		raise ValueError("Группы нет в БД")
+	cursor.execute(f"SELECT groups,course FROM Groups WHERE id=?", (chat_id,))
+	return dict(zip(("group", "course"), cursor.fetchone()))
+
 def return_from(source: str,chat_id: int) -> dict:
 	"""
 	Returns time/group in table of DB / Возвращает группу/время из таблицы БД
@@ -91,7 +98,7 @@ def return_from(source: str,chat_id: int) -> dict:
 	:param source: table of DB where it's need to search / Таблица БД где нужно искать
 	:return: data in table of DB / Данные в таблице БД
 	"""
-	check_source(source)
+	check_source(source,include_groups=False)
 	cursor.execute(f"SELECT * FROM {source} WHERE id=?", (chat_id,))
 	return dict(zip(("id","time","enabled"),cursor.fetchone()))
 

@@ -96,7 +96,7 @@ def apload(day, course, group):
         data = []
         with open('schedule.json', 'w', encoding='utf-8') as file:
             json.dump(data, file)
-    SERVICE_ACCOUNT_FILE = "C:\\Users\\Валентин\\Downloads\\coral-firefly-472118-d4-0e2e192450f3.json"
+    SERVICE_ACCOUNT_FILE = "coral-firefly-472118-d4-0e2e192450f3.json"
     FOLDER_ID = '1jfQFPUpOuv_tNLyQIoipPVsLQHv_H5UQ'
     SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
     current_files = []
