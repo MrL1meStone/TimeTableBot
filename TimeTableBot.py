@@ -1,13 +1,11 @@
-import asyncio
-
 from os import getenv
-from asyncio import run
+from asyncio import run, InvalidStateError
 from aiogram.filters import CommandStart, Command, ChatMemberUpdatedFilter, IS_NOT_MEMBER
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton, ChatMemberUpdated
 from dotenv import load_dotenv
-from bot_control.database import set_group, remove_from, turn_notification, is_enabled, return_from, change_time, \
-	stop_event, get_groups_info
-from bot_control.get_schedule import get_schedule
+from bot_control.database import *
+from bot_control.get_schedule import get_schedule, parse_schedule
+from bot_control.telegraph_pages import create_telegraph_page
 from bot_control.timework import weekly
 from datetime import datetime, timedelta
 
@@ -18,8 +16,6 @@ from aiogram import Dispatcher, Bot, F
 
 bot = Bot(BOT_TOKEN)
 dp = Dispatcher()
-
-print('Бот готов к работе')
 
 
 def get_settings_buttons(callback):
@@ -79,8 +75,7 @@ async def get_group(message: Message) -> None:
 @protected
 async def get_course(callback: CallbackQuery) -> None:
 	keyboard = InlineKeyboardMarkup(inline_keyboard=[
-		[InlineKeyboardButton(text='1-2', callback_data=f'course_1-2_{callback.data}')],
-		[InlineKeyboardButton(text='3-4', callback_data=f'course_3-4_{callback.data}')]])
+		[InlineKeyboardButton(text=str(i), callback_data=f'course_{i}_{callback.data}')] for i in range(1,5)])
 	await edit_message("Отлично! Теперь пожалуйста выберите курс:", callback.message, keyboard)
 
 
@@ -89,7 +84,7 @@ async def get_course(callback: CallbackQuery) -> None:
 async def add_group(callback: CallbackQuery) -> None:
 	await callback.answer(text='Отлично, все определено🥳', show_alert=True)
 	_, course, group = callback.data.split("_")
-	set_group(callback.from_user.id, group, course)
+	set_group(callback.from_user.id, group, int(course))
 	await callback_menu(callback)
 
 
@@ -127,7 +122,26 @@ async def get_schedule_menu(callback: CallbackQuery) -> None:
 async def answer_schedule(callback: CallbackQuery) -> None:
 	table = callback.data.replace("get_", "")
 	data = get_groups_info(callback.message.chat.id)
-	print(get_schedule(table, data["course"], data["group"]))
+	try:
+		schedule=get_schedule(modifier=table, course=int(data["course"]), group=data["group"])
+		message=parse_schedule(schedule)
+		if table!="Weekly":
+			await callback.message.answer(text=message)
+		else:
+			res = await create_telegraph_page(title=f'Расписание на неделю для группы {data["group"]}',
+			                            content_html=message)
+			await callback.message.answer(text=f'[Вот расписание на неделю:]({res['result']['url']})',
+			                              parse_mode="Markdown")
+
+	except ValueError as e:
+		if str(e)=='Расписания на воскресение не существует':
+			await callback.answer(text="Расписания на воскресенье нет",show_alert=True)
+	except FileNotFoundError as e:
+		if str(e)=="Группа не найдена в файле":
+			await callback.answer(text="Группа не найдена в расписании",
+			                      show_alert=True)
+		else:
+			print(repr(e))
 
 
 @dp.callback_query(F.data == 'settings')
@@ -202,7 +216,7 @@ async def plus_time(callback: CallbackQuery) -> None:
 		[InlineKeyboardButton(text=f'{i}', callback_data=f'delta_{i}_{table}') for i in (-1, -15, -60)],
 		[InlineKeyboardButton(text='◀️ Назад', callback_data='back')]])
 	time = return_from(table, callback.message.chat.id)["time"]
-	time = datetime.strptime(time, '%H:%M:%S')
+	time = datetime.strptime(time, '%H:%M')
 	change_time(table, callback.message.chat.id, (time + delta).time())
 	await edit_message('Настройте время уведомления:\n'
 	                   f'{time.strftime("%H:%M")}', callback.message, keyboard)
@@ -223,10 +237,11 @@ async def tasks():
 	weekly_task = asyncio.create_task(weekly(bot))
 	while True:
 		await asyncio.sleep(5)
+		weekly_ex=weekly_task.exception()
+		if weekly_ex:
+			print(weekly_ex)
 		if stop_event.is_set():
-			print("Остановка weekly")
 			weekly_task.cancel()
-			print("Запуск weekly")
 			weekly_task = asyncio.create_task(weekly(bot))
 			stop_event.clear()
 

@@ -9,31 +9,33 @@ cursor.execute('''
 CREATE TABLE IF NOT EXISTS Groups (
 id INTEGER PRIMARY KEY,
 groups TEXT NOT NULL,
-course TEXT NOT NULL) ''')
+course INTEGER NOT NULL) ''')
 
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS Weekly (
 id INTEGER PRIMARY KEY,
 time TIME NOT NULL,
-enabled BIT NOT NULL) ''')
+enabled BIT NOT NULL,
+path TEXT) ''')
 
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS Tomorrow (
 id INTEGER PRIMARY KEY,
 time TIME NOT NULL,
-enabled BIT NOT NULL) ''')
+enabled BIT NOT NULL,
+path TEXT) ''')
 
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS Today (
 id INTEGER PRIMARY KEY,
 time TIME NOT NULL,
-enabled BIT NOT NULL) ''')
+enabled BIT NOT NULL,
+path TEXT) ''')
 
 stop_event = asyncio.Event()
 
 def commit() -> None:
 	connection.commit()
-	print("Остановка тасков...")
 	stop_event.set()
 
 def check_source(source: str ,include_groups: bool = True) -> True:
@@ -59,19 +61,20 @@ def add_to(source: str , chat_id: int, time: str) -> None:
 	check_source(source,include_groups=False)
 	cursor.execute(f'INSERT INTO {source} (id, time, enabled) VALUES (?, ?, 1)', (chat_id,time))
 
-def set_group(chat_id: int , group: str, course: str) -> None:
+def set_group(chat_id: int , group: str, course: int) -> None:
 	"""
 	Adds chat id to DB to use schedule notifications /Добавляет ID чата в телеграмме для дальнейшего использования
 	:param chat_id: ID of telegram chat where bot will send schedule /ID чата в телеграмме где бот будет публиковать расписание
 	:param group: group of college /Группа колледжа, для которой нужно искать расписание
+	:param course: your course in college / Ваш курс в колледже
 	:return: None
 	"""
 	if not is_in("Groups",chat_id):
-		for source in ("Weekly", "Tomorrow", "Today"):
-			add_to(source, chat_id, "08:00:00")
+		for table in ("Weekly", "Tomorrow", "Today"):
+			add_to(table, chat_id, "08:00")
 		cursor.execute('INSERT INTO Groups (id,groups,course) VALUES (?, ?, ?)', (chat_id, group, course))
 	else:
-		cursor.execute('UPDATE Groups SET groups = ? WHERE id = ?', (group,chat_id))
+		cursor.execute('UPDATE Groups SET groups = ?, course = ? WHERE id = ?', (group, course, chat_id))
 	commit()
 
 def is_in(source: str , chat_id: int) -> bool:
@@ -100,7 +103,11 @@ def return_from(source: str,chat_id: int) -> dict:
 	"""
 	check_source(source,include_groups=False)
 	cursor.execute(f"SELECT * FROM {source} WHERE id=?", (chat_id,))
-	return dict(zip(("id","time","enabled"),cursor.fetchone()))
+	return dict(zip(("id","time","enabled","path"),cursor.fetchone()))
+
+def return_groups(chat_id: int) -> dict:
+	cursor.execute(f"SELECT * FROM Groups WHERE id=?", (chat_id,))
+	return dict(zip(("id", "group", "course"), cursor.fetchone()))
 
 def return_table(source: str) -> list[dict]:
 	"""
@@ -108,7 +115,7 @@ def return_table(source: str) -> list[dict]:
 	:param source: table of DB where it's need to return / Таблица БД которую нужно вернуть
 	:return: table of DB / Таблица БД
 	"""
-	check_source(source)
+	check_source(source,include_groups=False)
 	cursor.execute(f"SELECT * FROM {source}")
 	return [dict(zip(("id","time","enabled"),row)) for row in cursor.fetchall()]
 
@@ -138,5 +145,5 @@ def turn_notification(source: str, chat_id: int) -> None:
 
 def change_time(source: str, chat_id: int, time: datetime.time) -> None:
 	check_source(source,include_groups=False)
-	cursor.execute(f'UPDATE {source} SET time = ? WHERE id = ?', (str(time),chat_id))
+	cursor.execute(f'UPDATE {source} SET time = ? WHERE id = ?', (time.strftime('%H:%M'),chat_id))
 	commit()
