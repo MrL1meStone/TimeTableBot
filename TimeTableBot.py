@@ -1,15 +1,17 @@
+import asyncio
 from os import getenv
-from asyncio import run, InvalidStateError
+from asyncio import run
 from aiogram.filters import CommandStart, Command, ChatMemberUpdatedFilter, IS_NOT_MEMBER
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton, ChatMemberUpdated
 from dotenv import load_dotenv
-from bot_control.database import *
-from bot_control.get_schedule import get_schedule, parse_schedule
-from bot_control.telegraph_pages import create_telegraph_page
-from bot_control.timework import weekly
+
+from bot_control.database import (is_enabled, set_group, get_groups_info,
+                                  turn_notification, return_from, change_time,remove_from)
+from bot_control.notifications import notifications
+from bot_control.telegraph_pages import schedule_page
 from datetime import datetime, timedelta
 
-load_dotenv("bot_settings/BOT_TOKEN.env")
+load_dotenv("bot_settings/BOT_SETTINGS.env")
 BOT_TOKEN = getenv("BOT_TOKEN")
 
 from aiogram import Dispatcher, Bot, F
@@ -55,12 +57,12 @@ def protected(func):
 	return wrapper
 
 
-GROUPS = ['АП1-924', 'АП1-925', 'АП2-924', 'АП2-925', 'ОД-924',
+GROUPS = ('АП1-924', 'АП1-925', 'АП2-924', 'АП2-925', 'ОД-924',
           'ОД1-925', 'ОД2-924', 'ОД2-925', 'ПД2-924', 'ПД3-925',
           'ПД4-925', 'ПД5-925', 'ПК-25', 'ПК1-24', 'ПК2-24',
           'ПК3-924', 'ПК4-924', 'ТД-924', 'ТД-925', 'ТД2-924',
           'ТД2-925', 'ТП-924', 'ТП1-925', 'ТП2-925', 'ЭМД-924',
-          'ЭМД1-925', 'ЭМД2-925']
+          'ЭМД1-925', 'ЭМД2-925')
 
 
 @dp.message(CommandStart())
@@ -84,7 +86,7 @@ async def get_course(callback: CallbackQuery) -> None:
 async def add_group(callback: CallbackQuery) -> None:
 	await callback.answer(text='Отлично, все определено🥳', show_alert=True)
 	_, course, group = callback.data.split("_")
-	set_group(callback.from_user.id, group, int(course))
+	set_group(callback.message.chat.id, group, int(course))
 	await callback_menu(callback)
 
 
@@ -111,8 +113,7 @@ async def get_schedule_menu(callback: CallbackQuery) -> None:
 	keyboard = InlineKeyboardMarkup(
 		inline_keyboard=
 		[[InlineKeyboardButton(text=f'🗓Расписание на неделю', callback_data=f'get_Weekly')],
-		 [InlineKeyboardButton(text=f'🗓Расписание на завтра',
-		                       callback_data=f'get_Tomorrow')],
+		 [InlineKeyboardButton(text=f'🗓Расписание на завтра', callback_data=f'get_Tomorrow')],
 		 [InlineKeyboardButton(text=f'🗓Расписание на сегодня', callback_data=f'get_Today')],
 		 [InlineKeyboardButton(text='◀️ Назад', callback_data='back')]])
 	await edit_message('📋На какой промежуток времени нужно получить расписание?', callback.message, keyboard)
@@ -123,15 +124,12 @@ async def answer_schedule(callback: CallbackQuery) -> None:
 	table = callback.data.replace("get_", "")
 	data = get_groups_info(callback.message.chat.id)
 	try:
-		schedule=get_schedule(modifier=table, course=int(data["course"]), group=data["group"])
-		message=parse_schedule(schedule)
-		if table!="Weekly":
-			await callback.message.answer(text=message)
-		else:
-			res = await create_telegraph_page(title=f'Расписание на неделю для группы {data["group"]}',
-			                            content_html=message)
-			await callback.message.answer(text=f'[Вот расписание на неделю:]({res['result']['url']})',
-			                              parse_mode="Markdown")
+		await callback.answer(text='Подождите немного, скоро отправится сообщение с расписанием...')
+		url = await schedule_page(chat_id=callback.message.chat.id,
+		                          course=int(data["course"]),
+		                          group=data["group"],
+		                          modifier=table)
+		await callback.message.answer(text=f"[Ссылка на расписание]({url})",parse_mode="Markdown")
 
 	except ValueError as e:
 		if str(e)=='Расписания на воскресение не существует':
@@ -141,7 +139,7 @@ async def answer_schedule(callback: CallbackQuery) -> None:
 			await callback.answer(text="Группа не найдена в расписании",
 			                      show_alert=True)
 		else:
-			print(repr(e))
+			raise e
 
 
 @dp.callback_query(F.data == 'settings')
@@ -217,7 +215,8 @@ async def plus_time(callback: CallbackQuery) -> None:
 		[InlineKeyboardButton(text='◀️ Назад', callback_data='back')]])
 	time = return_from(table, callback.message.chat.id)["time"]
 	time = datetime.strptime(time, '%H:%M')
-	change_time(table, callback.message.chat.id, (time + delta).time())
+	time = (time+delta).time()
+	change_time(table, callback.message.chat.id, time.strftime("%H:%M"))
 	await edit_message('Настройте время уведомления:\n'
 	                   f'{time.strftime("%H:%M")}', callback.message, keyboard)
 
@@ -233,22 +232,9 @@ async def start_polling() -> None:
 	await dp.start_polling(bot)
 
 
-async def tasks():
-	weekly_task = asyncio.create_task(weekly(bot))
-	while True:
-		await asyncio.sleep(5)
-		weekly_ex=weekly_task.exception()
-		if weekly_ex:
-			print(weekly_ex)
-		if stop_event.is_set():
-			weekly_task.cancel()
-			weekly_task = asyncio.create_task(weekly(bot))
-			stop_event.clear()
-
-
 async def main() -> None:
-	asyncio.create_task(tasks())
 	asyncio.create_task(start_polling())
+	asyncio.create_task(notifications())
 	await asyncio.Event().wait()
 
 

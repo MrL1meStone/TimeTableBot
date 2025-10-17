@@ -7,7 +7,7 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
 import datetime
 
-'coral-firefly-472118-d4-0e2e192450f3.json'
+'credentials.json'
 
 def into_datetime(string):
 	two_dates = string.split('-')
@@ -108,7 +108,7 @@ def apload(day, course, group):
 		data = []
 		with open('schedule.json', 'w', encoding='utf-8') as file:
 			json.dump(data, file)
-	SERVICE_ACCOUNT_FILE = "bot_settings/coral-firefly-472118-d4-0e2e192450f3.json"
+	SERVICE_ACCOUNT_FILE = "bot_settings/credentials.json"
 	FOLDER_ID = '1jfQFPUpOuv_tNLyQIoipPVsLQHv_H5UQ'
 	SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
 	current_files = []

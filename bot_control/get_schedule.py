@@ -7,13 +7,14 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
 from datetime import datetime, timedelta
 
-load_dotenv("bot_settings/BOT_TOKEN.env")
-CREDS_PATH = os.getenv("CREDS_PATH")
+
+load_dotenv("bot_settings/BOT_SETTINGS.env")
 FOLDER_ID = os.getenv("FOLDER_ID")
 
 ROWS_FOR_WEEK_DAYS = ((12, 25), (26, 37), (38, 49), (50, 61), (62, 73))
 HEADER_ROWS = (14, 26, 38, 50, 62)
 BASE_PATH = 'downloaded_xlsx'
+CREDS_PATH = 'bot_settings/credentials.json'
 
 
 # ==============================
@@ -62,7 +63,9 @@ def _download_new_xlsx() -> None:
 	os.makedirs(BASE_PATH, exist_ok=True)
 
 	for file in files:
-		if file['name'] not in os.listdir(BASE_PATH) and file['name'] != 'Расписание звонков.xlsx':
+		if (file['name'] not in os.listdir(BASE_PATH) and
+				file['name'] != 'Расписание звонков.xlsx' and
+				"График" not in file['name']):
 			request = service.files().get_media(fileId=file['id'])
 			out_path = os.path.join(BASE_PATH, file['name'])
 			with open(out_path, 'wb') as f:
@@ -93,7 +96,7 @@ def get_schedule(modifier: str, course: int, group: str):
 	current_time = now + offset
 	current_time += timedelta(days= (modifier=='Weekly' and current_time.date().weekday()==6))
 	current_date = current_time.date()
-	if modifier == 'Today' and current_date.weekday()==6:
+	if current_date.weekday()==6:
 		raise ValueError("Расписания на воскресение не существует")
 
 	filename = ""
@@ -101,12 +104,14 @@ def get_schedule(modifier: str, course: int, group: str):
 	# Ищем файл с подходящими датами
 	for file in os.listdir(BASE_PATH):
 		_ , course_range, _ , _ , date = file.split(" ")
+		print(course_range,date)
 		if str(course) in course_range:
 			date = date.replace("г..xlsx", "") # Удаление ненужных частей в дате
 			start_date, end_date = _parse_date_range(date)
 			if start_date <= current_date <= end_date:
 				filename = file
 				break
+	print(filename,1)
 
 	if not filename:
 		return upload_and_retry(modifier, course, group)
@@ -186,11 +191,11 @@ def upload_and_retry(day: str, course: int, group: str):
 def parse_schedule(schedule: dict) -> str:
 	message=''
 	for key,value in schedule.items():
-		message+=f"🗓{key}\n"
+		message+=f"🗓{key}<br>"
 		for n,subject in enumerate(value):
-			message+=(f"{n+1}){subject['subject']}\n"
-			          f"    Преподаватель: {subject['teacher']}\n"
-			          f"    Время: {subject['time']}\n"
-			          f"    Кабинет: {subject['cabinet']}\n")
-		message += '\n'
+			message+=(f"{n+1}){subject['subject']}<br>"
+			          f"    Преподаватель: {subject['teacher']}<br>"
+			          f"    Время: {subject['time']}<br>"
+			          f"    Кабинет: {subject['cabinet']}<br>")
+		message += '<br>'
 	return message
