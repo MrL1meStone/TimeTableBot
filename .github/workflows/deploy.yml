@@ -1,0 +1,30 @@
+name: Deploy to Dockhost
+
+on:
+  push:
+    branches:
+      - main  # деплой при пуше в main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Клонируем код
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      # 2. Создаём папки и credentials.json
+      - name: Create folders and credentials
+        run: |
+          mkdir -p downloaded_xlsx
+          mkdir -p bot_settings
+          echo '${{ secrets.CREDENTIALS_JSON }}' > bot_settings/credentials.json
+
+      # 3. Собираем и пушим Docker-образ (или просто билдим)
+      - name: Build Docker image
+        run: |
+          docker build -t mybot .
+
+      # 4. (опционально) Отправляем образ на Dockhost, если он требует push
+      # Dockhost обычно просто берёт образ из GitHub Actions
