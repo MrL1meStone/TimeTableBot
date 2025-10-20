@@ -18,8 +18,10 @@ class Restartable:
 	def __init__(self,func):
 		self.func=func
 		self.task=asyncio.create_task(func())
+
 	def start(self):
 		return asyncio.create_task(self.func())
+
 	def is_done(self):
 		return
 

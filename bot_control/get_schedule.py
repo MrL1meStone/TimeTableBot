@@ -43,10 +43,7 @@ def _remove_all_files() -> None:
 
 
 def _download_new_xlsx() -> None:
-	"""
-	Скачивает новые XLSX-файлы из Google Drive в target_folder.
-	known_files — список уже скачанных файлов (чтобы не дублировать).
-	"""
+	"""Скачивает новые XLSX-файлы из Google Drive в target_folder."""
 	scopes = ['https://www.googleapis.com/auth/drive.readonly']
 	credentials = service_account.Credentials.from_service_account_file(CREDS_PATH, scopes=scopes)
 	service = build('drive', 'v3', credentials=credentials)
@@ -74,10 +71,10 @@ def _download_new_xlsx() -> None:
 				while not done:
 					status, done = downloader.next_chunk()
 
-
 # ==============================
 # ОСНОВНАЯ ЛОГИКА
 # ==============================
+
 def get_schedule(modifier: str, course: int, group: str):
 	"""
 	Возвращает расписание:
