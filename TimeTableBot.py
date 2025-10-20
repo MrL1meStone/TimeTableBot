@@ -31,7 +31,7 @@ def get_settings_buttons(callback):
 	return keyboard
 
 
-async def edit_message(text: str, message: Message, keyboard: InlineKeyboardMarkup | None) -> None:
+async def edit_message(text: str, message: Message, keyboard: InlineKeyboardMarkup) -> None:
 	if message.text != text:
 		await bot.edit_message_text(text=text, message_id=message.message_id,
 		                            chat_id=message.chat.id, reply_markup=keyboard)
