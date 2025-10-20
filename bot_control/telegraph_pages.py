@@ -5,7 +5,7 @@ from telegraph.aio import Telegraph
 from bot_control.database import return_from, set_path
 from bot_control.get_schedule import get_schedule, parse_schedule
 
-ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
+ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN")
 
 th = Telegraph(access_token=ACCESS_TOKEN)
 

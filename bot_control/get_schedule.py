@@ -7,7 +7,7 @@ from googleapiclient.http import MediaIoBaseDownload
 from datetime import datetime, timedelta
 
 
-FOLDER_ID = os.getenv("FOLDER_ID")
+FOLDER_ID = os.environ.get("FOLDER_ID")
 
 ROWS_FOR_WEEK_DAYS = ((12, 25), (26, 37), (38, 49), (50, 61), (62, 73))
 HEADER_ROWS = (14, 26, 38, 50, 62)

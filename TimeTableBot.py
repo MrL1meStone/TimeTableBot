@@ -1,9 +1,8 @@
 import asyncio
-from os import getenv
+import os
 from asyncio import run
 from aiogram.filters import CommandStart, Command, ChatMemberUpdatedFilter, IS_NOT_MEMBER
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton, ChatMemberUpdated
-from dotenv import load_dotenv
 
 from bot_control.database import (is_enabled, set_group, get_groups_info,
                                   turn_notification, return_from, change_time,remove_from)
@@ -11,8 +10,7 @@ from bot_control.notifications import notifications
 from bot_control.telegraph_pages import schedule_page
 from datetime import datetime, timedelta
 
-BOT_TOKEN = getenv("BOT_TOKEN")
-print(BOT_TOKEN)
+BOT_TOKEN = os.environ.get("TOKEN")
 
 from aiogram import Dispatcher, Bot, F
 
