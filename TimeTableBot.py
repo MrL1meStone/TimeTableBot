@@ -12,6 +12,7 @@ from bot_control.telegraph_pages import schedule_page
 from datetime import datetime, timedelta
 
 BOT_TOKEN = getenv("BOT_TOKEN")
+print(BOT_TOKEN)
 
 from aiogram import Dispatcher, Bot, F
 

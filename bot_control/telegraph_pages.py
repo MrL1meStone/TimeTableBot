@@ -1,5 +1,3 @@
-import asyncio
-import dotenv
 import os
 
 from telegraph.aio import Telegraph
