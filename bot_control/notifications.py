@@ -9,7 +9,6 @@ from aiogram import Bot
 from bot_control.database import return_table, check_source, get_groups_info, stop_event
 from bot_control.telegraph_pages import schedule_page
 
-dotenv.load_dotenv("../bot_settings/BOT_SETTINGS.env")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 bot = Bot(BOT_TOKEN)

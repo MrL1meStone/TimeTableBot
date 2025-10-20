@@ -11,7 +11,6 @@ from bot_control.notifications import notifications
 from bot_control.telegraph_pages import schedule_page
 from datetime import datetime, timedelta
 
-load_dotenv("bot_settings/BOT_SETTINGS.env")
 BOT_TOKEN = getenv("BOT_TOKEN")
 
 from aiogram import Dispatcher, Bot, F

@@ -1,14 +1,12 @@
 import os
 import openpyxl
 
-from dotenv import load_dotenv
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
 from datetime import datetime, timedelta
 
 
-load_dotenv("bot_settings/BOT_SETTINGS.env")
 FOLDER_ID = os.getenv("FOLDER_ID")
 
 ROWS_FOR_WEEK_DAYS = ((12, 25), (26, 37), (38, 49), (50, 61), (62, 73))
