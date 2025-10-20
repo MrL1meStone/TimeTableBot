@@ -10,7 +10,7 @@ from bot_control.notifications import notifications
 from bot_control.telegraph_pages import schedule_page
 from datetime import datetime, timedelta
 
-BOT_TOKEN = os.environ.get("TOKEN")
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
 
 from aiogram import Dispatcher, Bot, F
 
