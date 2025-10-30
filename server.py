@@ -3,13 +3,16 @@ from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import uvicorn
 import json
+import asyncio
+import os
 
 SERVICE_ACCOUNT_FILE = "coral-firefly-472118-d4-0e2e192450f3.json"
 FOLDER_ID = '1jfQFPUpOuv_tNLyQIoipPVsLQHv_H5UQ'
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
 credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
 service = build('drive', 'v3', credentials=credentials)
-BOT_INSTANCE = 'your_bot_object'
+TOKEN = os.environ.get("BOT_TOKEN")
+BOT_INSTANCE = Bot(token=TOKEN)
 TARGET_CHAT_ID = 'your_chat_id'
 
 def process_notification(payload):
@@ -73,3 +76,4 @@ async def handle_notification(
 if __name__ == '__main__':
     # Launching the server
     uvicorn.run('main:app', host='0.0.0.0', port=8000)  # Не финальный хост
+
