@@ -1,3 +1,4 @@
+import json
 import os
 import openpyxl
 
@@ -8,11 +9,16 @@ from datetime import datetime, timedelta
 
 
 FOLDER_ID = os.environ.get("FOLDER_ID")
+CREDENTIALS = os.environ.get("CREDENTIALS")
 
 ROWS_FOR_WEEK_DAYS = ((12, 25), (26, 37), (38, 49), (50, 61), (62, 73))
 HEADER_ROWS = (14, 26, 38, 50, 62)
 BASE_PATH = 'downloaded_xlsx'
 CREDS_PATH = 'bot_settings/credentials.json'
+
+if not os.path.exists(CREDS_PATH):
+	with open(CREDS_PATH,'w') as file:
+		file.write(json.dump(CREDENTIALS))
 
 
 # ==============================

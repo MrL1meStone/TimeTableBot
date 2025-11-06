@@ -37,7 +37,7 @@ def commit() -> None:
 	connection.commit()
 	stop_event.set()
 
-def check_source(source: str ,include_groups: bool = True) -> True:
+def check_source(source: str ,include_groups: bool = True) -> bool | ValueError:
 	"""
 	Проверяет правильность написания аргументов функций
 	:param include_groups: Добавить 'Groups' в список разрешенных значений

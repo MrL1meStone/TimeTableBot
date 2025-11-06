@@ -24,7 +24,7 @@ class Restartable:
 	def is_done(self):
 		return
 
-async def wait_notify(table: str) -> (str, int, int):
+async def wait_notify(table: str) -> int:
 	now = dt.datetime.now().astimezone()
 	# Убираем смещение UTC сервера и добавляем Перми
 	perm_time = now - now.utcoffset() + dt.timedelta(hours=5)

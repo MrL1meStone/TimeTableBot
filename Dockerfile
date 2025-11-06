@@ -1,12 +1,11 @@
 FROM python:3.9
 
-ENV PYTHONUNBUFFERED=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=on
 
 WORKDIR /app
 
 COPY bot_settings /app/bot_settings
 COPY bot_control /app/bot_control
+RUN ["mkdir", "downloaded_xlsx"]
 
 RUN pip install --no-cache-dir --upgrade -r /app/bot_settings/requirements.txt
 
