@@ -6,7 +6,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: debian-latest
 
     steps:
       - name: Checkout repo
@@ -21,4 +21,5 @@ jobs:
             -e BOT_TOKEN=${{ secrets.BOT_TOKEN }} \
             -e ACCESS_TOKEN=${{ secrets.ACCESS_TOKEN }} \
             -e FOLDER_ID=${{ secrets.FOLDER_ID }} \
+            -e CREDENTIALS=${{secrets.CREDENTIALS}} \
             my-bot
