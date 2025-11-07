@@ -1,9 +1,11 @@
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
 from google.oauth2 import service_account
+import os
 
-SERVICE_ACCOUNT_FILE = "coral-firefly-472118-d4-0e2e192450f3.json"
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
+SERVICE_ACCOUNT_FILE_DATA = os.environ.get("CREDENTIALS")
+SERVICE_ACCOUNT_FILE = json.loads(SERVICE_ACCOUNT_FILE_DATA)
 credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
 service = build('drive', 'v3', credentials=credentials)
 
@@ -12,7 +14,7 @@ def create_watch():
     callback_url = "адрес сервера"
     body = {
         'id': channel_id,
-        'type': "webhook',
+        'type': 'webhook',
         'address': callback_url, # Можно доп. параметры
     }
     start_page_token_response = service.changes().getStartPageToken().execute()
