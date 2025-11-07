@@ -1,0 +1,6 @@
+services:
+  bot:
+    build: .
+    env_file:
+      - ./bot_settings/BOT_SETTINGS.env
+    image: python:3.12

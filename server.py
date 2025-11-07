@@ -1,28 +1,26 @@
 from fastapi import FastAPI, Request, Header
 from googleapiclient.discovery import build
-from google.oauth2 import service_account
+from aiogram import Bot
 import uvicorn
 import json
-import asyncio
 import os
 
-SERVICE_ACCOUNT_FILE = "coral-firefly-472118-d4-0e2e192450f3.json"
-FOLDER_ID = '1jfQFPUpOuv_tNLyQIoipPVsLQHv_H5UQ'
-SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
-credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
-service = build('drive', 'v3', credentials=credentials)
+FOLDER_ID = os.environ.get("FOLDER_ID")
+CREDENTIALS = os.environ.get('CREDENTIALS')
 TOKEN = os.environ.get("BOT_TOKEN")
-BOT_INSTANCE = Bot(token=TOKEN)
-TARGET_CHAT_ID = 'your_chat_id'
+
+service = build('drive', 'v3', credentials=CREDENTIALS)
+bot = Bot(token=TOKEN)
 
 def process_notification(payload):
     try:
         with open('files.json', 'r', encoding='utf-8') as file:
-          data = json.load(file)
+            data = json.load(file)
     except FileNotFoundError:
         data = {}
         results = service.files().list(
-        q=f"'{FOLDER_ID}' in parents and mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'", fields="files(id, name, modifiedTime)").execute()
+            q=f"'{FOLDER_ID}' in parents and mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'",
+            fields="files(id, name, modifiedTime)").execute()
         files = results.get('files', [])
         for file in files:
             data[file['id']] = {'name': file['name'], 'modifiedTime': file['modifiedTime']}
@@ -30,7 +28,7 @@ def process_notification(payload):
             json.dump(data, file)
 
     final_answer = ''
-    
+
     if payload.get('removed'):  #  Проверка на удаленный файл
          needed_file_id = payload["fileId"]
          final_answer = f'Файл {data[needed_file_id]["name"]} был удален с диска'
@@ -68,12 +66,11 @@ async def handle_notification(
 
     changes = process_notification(payload)
     if len(changes) > len('Внимание! Кажется, '):
-         for chat in chat_id:
-              await bot.send_message(chat_id, f"Внимание! На диске изменение: {changes}")
+         for chat in some_func:
+              await bot.send_message(chat, f"Внимание! На диске изменение: {changes}")
 
     return {'status': 'ok'}
 
 if __name__ == '__main__':
-    # Launching the server
     uvicorn.run('main:app', host='0.0.0.0', port=8000)  # Не финальный хост
 

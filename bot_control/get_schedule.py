@@ -5,7 +5,7 @@ import openpyxl
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta,date
 
 
 FOLDER_ID = os.environ.get("FOLDER_ID")
@@ -25,7 +25,7 @@ if not os.path.exists(CREDS_PATH):
 # ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 # ==============================
 
-def _parse_date_range(date_range: str) -> tuple[datetime.date, datetime.date]:
+def _parse_date_range(date_range: str) -> tuple[date, date]:
 	"""
 	Принимает строку вида '22.09-27.09.2025' (dd.mm-dd.mm.yyyy)
 	и возвращает кортеж двух дат (начало, конец).
