@@ -20,17 +20,19 @@ chat_id = 'your_chat_id'
 def process_notification(payload):
     try:
         with open('files.json', 'r', encoding='utf-8') as file:
-          data = json.load(file)
+            data = json.load(file)
     except FileNotFoundError:
         data = {}
         results = service.files().list(
+
         q=f"'{FOLDER__GOOGLE_DRIVE_ID}' in parents and mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'", fields="files(id, name, modifiedTime)").execute()
+
         files = results.get('files', [])
         for file in files:
             data[file['id']] = {'name': file['name'], 'modifiedTime': file['modifiedTime']}
         with open('files.json', 'w', encoding='utf-8') as file:
             json.dump(data, file)
-
+    
     final_answer = None
     
     if payload.get('removed'):  #  Проверка на удаленный файл
@@ -75,5 +77,4 @@ async def handle_notification(
     return {'status': 'ok'}
 
 if __name__ == '__main__':
-    # Launching the server
     uvicorn.run('main:app', host='0.0.0.0', port=8000)  # Не финальный хост
