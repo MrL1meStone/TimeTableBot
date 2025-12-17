@@ -14,6 +14,8 @@ headers = {
 TOKEN = os.environ.get("BOT_TOKEN")
 bot = Bot(token=TOKEN)
 
+EXTENSIONS = ('.docx', '.txt', '.pdf', '.odt', '.rtf', '.xls', '.xlsx')
+
 async def download_file(session, href, filename):
     # Функция скачивает бинарный файл filename по ссылке для скачивания href
     file_path = os.path.join(save_dir, filename)
@@ -27,6 +29,8 @@ async def download_file(session, href, filename):
                 print(f"Ошибка: {response.status}")
                 print(await response.text())
                 return None
+
+
 async def get_folder_contents(session, public_key):
     # Функция подробную информацию о всех файлах на диске
     params = {'public_key' : public_key}
@@ -38,6 +42,8 @@ async def get_folder_contents(session, public_key):
                 print(f"Ошибка: {response.status}")
                 print(await response.text())
                 return None
+
+
 async def get_file_names_with_apload():
     # Функция позволяет получить имена всех файлов на диске в виде списка (для создания кнопок), одновременно скачав их с расширением .jpg
     async with aiohttp.ClientSession() as session:
@@ -46,7 +52,7 @@ async def get_file_names_with_apload():
         if result:
             for item in result['_embedded']['items']:
                 if item['type'] == 'file':
-                    if os.path.splitext(item['name'])[1] in ('.docx', '.txt', '.pdf', '.odt', '.rtf', '.xls', '.xlsx'):
+                    if os.path.splitext(item['name'])[1] in EXTENSIONS:
                         new_jpg = f'{item["name"].replace(os.path.splitext(item["name"])[1], '')}.jpg'
                         filenames.append(new_jpg)
                         href = item['sizes'][9]['url']
@@ -59,6 +65,8 @@ async def get_file_names_with_apload():
         else:
             print(f"Файлы не найдены")
             return None
+
+
 async def send_schedule(filename, chat_id):
     # Первый параметр - текст на Inline кнопке. Второй параметр - ID группы. Функция отправляет уже скачанный jpg файл в указанный чат
     file_path = os.path.join(save_dir, filename)

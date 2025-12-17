@@ -1,8 +1,6 @@
-import os
-
 from googleapiclient.discovery import build
-from google.oauth2.credentials import Credentials
 from google.oauth2 import service_account
+import json
 import os
 
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
